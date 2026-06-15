@@ -49,6 +49,17 @@ blog upload-image cover.png   # 이미지만 업로드 → url
 blog search "키워드" --private
 blog style-guide              # 내 글 톤·분류 요약(AI 컨텍스트)
 blog similar my-slug
+blog suggest-tags draft.md --json    # 본문 → 태그·카테고리 추천
+blog suggest-titles draft.md --json  # 본문 → 제목 후보 5개(GPT)
+```
+
+### AI 에이전트 워크플로
+
+```bash
+blog suggest-titles draft.md --json   # 제목 후보 받기
+blog suggest-tags draft.md --json     # 태그·카테고리 받기
+# → 고른 값으로 frontmatter 채운 뒤
+blog publish draft.md
 ```
 
 ## 마크다운 / frontmatter

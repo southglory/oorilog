@@ -64,6 +64,22 @@ class BlogClient:
         self._raise(res)
         return res.json()
 
+    def suggest_taxonomy(self, title: str, body_md: str) -> dict[str, Any]:
+        """본문 → 어울리는 태그·카테고리 추천. {tags:[...], categories:[...]}."""
+        res = self._client.post(
+            "/api/admin/suggest-taxonomy", json={"title": title, "body_md": body_md}
+        )
+        self._raise(res)
+        return res.json()
+
+    def suggest_titles(self, title: str, body_md: str) -> list[str]:
+        """본문 → 제목 후보 5개(GPT). {titles:[...]} 에서 리스트만 반환."""
+        res = self._client.post(
+            "/api/admin/editor/suggest-titles", json={"title": title, "body_md": body_md}
+        )
+        self._raise(res)
+        return res.json().get("titles", [])
+
     def upload_image(self, path: Path) -> dict[str, Any]:
         with path.open("rb") as fp:
             files = {"file": (path.name, fp, _guess_content_type(path))}

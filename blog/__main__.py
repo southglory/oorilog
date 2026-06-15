@@ -344,6 +344,55 @@ def similar(slug: str, limit: int = 5) -> None:
         console.print(f"- {p['title']} [dim]({p['slug']})[/dim]")
 
 
+def _title_body(path: Path) -> tuple[str, str]:
+    """.md 에서 frontmatter title + 본문 추출(추천 API 입력용)."""
+    post = frontmatter.load(str(path))
+    return (str(post.metadata.get("title") or path.stem), post.content)
+
+
+@app.command("suggest-tags")
+def suggest_tags_cmd(
+    path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    json_out: Annotated[bool, typer.Option("--json", help="JSON 출력(에이전트용)")] = False,
+) -> None:
+    """글(.md)에 어울리는 태그·카테고리 추천 — 본인 글 분류 체계 기준."""
+    title, body = _title_body(path)
+    with _client() as c:
+        res = c.suggest_taxonomy(title, body)
+    if json_out:
+        console.print_json(data=res)
+        return
+    cats = res.get("categories", [])
+    tags = res.get("tags", [])
+    if cats:
+        console.print("[bold]카테고리 후보:[/bold]")
+        for cat in cats[:5]:
+            console.print(f"  - {cat['name']} [dim](score {cat.get('score', 0):.1f})[/dim]")
+    console.print("[bold]태그 후보:[/bold]" if tags else "[yellow]태그 후보 없음[/yellow]")
+    for t in tags[:12]:
+        console.print(f"  - {t['name']} [dim](score {t.get('score', 0):.1f})[/dim]")
+
+
+@app.command("suggest-titles")
+def suggest_titles_cmd(
+    path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    json_out: Annotated[bool, typer.Option("--json", help="JSON 출력(에이전트용)")] = False,
+) -> None:
+    """글(.md) 본문으로 제목 후보 5개 추천 — 본인 글 톤 참고."""
+    title, body = _title_body(path)
+    with _client() as c:
+        titles = c.suggest_titles(title, body)
+    if json_out:
+        console.print_json(data={"titles": titles})
+        return
+    if not titles:
+        console.print("[yellow]제목 후보 없음 (본문이 너무 짧을 수 있음)[/yellow]")
+        return
+    console.print("[bold]제목 후보:[/bold]")
+    for t in titles:
+        console.print(f"  - {t}")
+
+
 if __name__ == "__main__":
     try:
         app()
